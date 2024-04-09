@@ -114,7 +114,7 @@ jobs:
       with:
         ccache: false
         mixkey: ${{ env.SOURCE_REPO }}-${{ env.REPO_BRANCH }}-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}
-        prefix: ${{ env.OPENWRT_PATH }
+        prefix: ${{ env.OPENWRT_PATH }}
 
         
     - name: 安装外部插件
