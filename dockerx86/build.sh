@@ -7,7 +7,7 @@ fi
 #@ cp -f patches/rc.local "openwrt_rootfs/etc/" && \
 TMPDIR=openwrt_rootfs
 OUTDIR=/root/dockerx86/
-IMG_NAME=piaoyizy/openwrt-x86
+IMG_NAME=mhy123152/lean-rootfs
 
 [ -d "$TMPDIR" ] && rm -rf "$TMPDIR"
 sudo apt-get install pigz

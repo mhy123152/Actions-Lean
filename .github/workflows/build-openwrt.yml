@@ -21,7 +21,7 @@ on:
 
 env:
   REPO_URL: https://github.com/coolsnowwolf/lede
-  REPO_BRANCH: master
+  REPO_BRANCH: 20230609
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: .config
   DIY_P1_SH: diy-part1.sh
@@ -43,7 +43,7 @@ jobs:
       DEVICE_SUBTARGET: ${{ steps.variable.outputs.DEVICE_SUBTARGET }} 
     steps:
     - name: 检查项目分支
-      uses: actions/checkout@main
+      uses: actions/checkout@v4
 
     - name: 安装编译环境
       env:
@@ -140,7 +140,7 @@ jobs:
         echo "status=success" >> $GITHUB_OUTPUT
         grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' > DEVICE_NAME
         [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_ENV
-        echo "FILE_DATE=_$(date +"%Y%m%d%H%M"-x86)" >> $GITHUB_ENV
+        echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
 
     - name: 查看磁盘用量
       if: (!cancelled())
@@ -156,7 +156,7 @@ jobs:
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: 打包上传固件
-      uses: actions/upload-artifact@main
+      uses: actions/upload-artifact@v4
       if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
         name: OpenWrt_firmware${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
@@ -166,8 +166,8 @@ jobs:
       id: tag
       if: env.UPLOAD_RELEASE == 'true' && !cancelled()
       run: |
-        # echo "::set-output name=release_tag::$(date +"%Y.%m.%d-%H%M"-x86)"
-        echo "release_tag=$(date +"%Y.%m.%d-%H%M"-x86)" >> $GITHUB_OUTPUT
+        # echo "::set-output name=release_tag::$(date +"%Y.%m.%d-%H%M")"
+        echo "release_tag=$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
         touch release.txt
         [ $UPLOAD_COWTRANSFER = true ] && echo "🔗 [Cowtransfer](${{ steps.cowtransfer.outputs.url }})" >> release.txt
         [ $UPLOAD_WETRANSFER = true ] && echo "🔗 [WeTransfer](${{ steps.wetransfer.outputs.url }})" >> release.txt
@@ -183,21 +183,21 @@ jobs:
         body_path: release.txt
         files: ${{ env.FIRMWARE }}/*
 
-    - name: 清理编译流程
-      uses: Mattraks/delete-workflow-runs@main
-      with:
-        retain_days: 1
-        keep_minimum_runs: 2
+    # - name: 清理编译流程
+    #   uses: Mattraks/delete-workflow-runs@main
+    #   with:
+    #     retain_days: 1
+    #     keep_minimum_runs: 2
 
-    - name: 删除旧版固件
-      uses: dev-drprasad/delete-older-releases@master
-    #  uses: dev-drprasad/delete-older-releases@v0.1.0
-      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
-      with:
-        keep_latest: 2
-        delete_tags: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    # - name: 删除旧版固件
+    #   uses: dev-drprasad/delete-older-releases@master
+    # #  uses: dev-drprasad/delete-older-releases@v0.1.0
+    #   if: env.UPLOAD_RELEASE == 'true' && !cancelled()
+    #   with:
+    #     keep_latest: 2
+    #     delete_tags: true
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   
     - name: 构造docker镜像
       id: push
@@ -208,7 +208,106 @@ jobs:
         chmod +x $DOCKER_BUILD_SH
         ./$DOCKER_BUILD_SH
         gzip -dc docker-img-openwrt-x86-latest.gz | docker load
-        docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
-        docker tag piaoyizy/openwrt-x86 piaoyizy/openwrt-x86:R${{ env.DATE_YMD }}
-        docker push piaoyizy/openwrt-x86
+        docker login --username=${{ secrets.DOCKER_USER }} --password=${{ secrets.DOCKER_TOKEN }}
+        docker tag mhy123152/lean-rootfs mhy123152/lean-rootfs:${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }} mhy123152/lean-rootfs:${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}-${{ env.REPO_BRANCH }}
+        docker push mhy123152/lean-rootfs
         echo "status=success" >> $GITHUB_OUTPUT
+
+
+  # push-rootfs-container:
+  #   name: RootFS
+  #   runs-on: ubuntu-latest
+  #   needs: [build]
+  #   if: needs.generate_matrix.outputs.rootfs != '{"include":[]}'
+  #   strategy:
+  #     fail-fast: False
+  #     matrix: ${{fromJson(needs.generate_matrix.outputs.rootfs)}}
+
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+
+  #     - name: Download artifact
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: OpenWrt_firmware${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
+  #         path: ./
+
+  #     - name: Set up QEMU
+  #       run: |
+  #         sudo apt-get update
+  #         sudo apt-get install -y qemu-user-static binfmt-support
+  #         sudo update-binfmts --import
+
+  #     - name: Set up Docker Buildx
+  #       uses: docker/setup-buildx-action@v3
+
+  #     - name: Login to GitHub Container Registry
+  #       if: github.event_name != 'pull_request'
+  #       uses: docker/login-action@v3
+  #       with:
+  #         registry: ghcr.io
+  #         username: ${{ github.actor }}
+  #         password: ${{ secrets.GITHUB_TOKEN }}
+
+  #     - name: Login to Docker.io Container Registry
+  #       if: github.event_name != 'pull_request'
+  #       uses: docker/login-action@v3
+  #       with:
+  #         username: ${{ secrets.DOCKER_USER }}
+  #         password: ${{ secrets.DOCKER_TOKEN }}
+
+  #     - name: Docker meta
+  #       id: meta
+  #       uses: docker/metadata-action@v5
+  #       with:
+  #         images: |
+  #           ghcr.io/mhy123152/lean-rootfs
+  #           docker.io/mhy123152/lean-rootfs
+  #         flavor: |
+  #           latest=false
+  #           prefix=${{ env.PREFIX }}
+  #         tags: |
+  #           ${{ matrix.target }}-${{ needs.generate_matrix.outputs.ref }}
+  #           ${{ matrix.target }}-${{ needs.generate_matrix.outputs.version }}
+  #           ${{ matrix.target }}-master,enable=${{ needs.generate_matrix.outputs.ref == 'main' }}
+  #           ${{ matrix.target }},enable=${{ needs.generate_matrix.outputs.version == 'SNAPSHOT' }}
+  #           ${{ matrix.arch }}-${{ needs.generate_matrix.outputs.ref }}
+  #           ${{ matrix.arch }}-${{ needs.generate_matrix.outputs.version }}
+  #           ${{ matrix.arch }}-master,enable=${{ needs.generate_matrix.outputs.ref == 'main' }}
+  #           ${{ matrix.arch }},enable=${{ needs.generate_matrix.outputs.version == 'SNAPSHOT' }}
+  #           latest,enable=${{ needs.generate_matrix.outputs.version == 'SNAPSHOT' && matrix.target == 'x86/64'}}
+
+  #     - name: Generate build args
+  #       id: build_args
+  #       run: |
+  #         echo 'args<<EOF
+  #           ROOTFS_FILE=${{ needs.build.outputs.release_tag }}
+  #           USER=root
+  #           CMD="/bin/ash"
+  #         EOF' >> $GITHUB_OUTPUT
+
+  #     - name: Build
+  #       id: build
+  #       uses: docker/build-push-action@v6
+  #       with:
+  #         context: .
+  #         push: false
+  #         tags: ${{ steps.meta.outputs.tags }}
+  #         load: true
+  #         build-args: ${{ steps.build_args.outputs.args }}
+  #         labels: ${{ steps.meta.outputs.labels }}
+  #         platforms: linux/${{ matrix.arch }}
+
+  #     - name: Smoke test
+  #       run: docker run --platform=linux/${{ matrix.arch }} ${{ steps.build.outputs.imageid }} uname -m
+
+  #     - name: Push
+  #       if: github.event_name != 'pull_request'
+  #       uses: docker/build-push-action@v6
+  #       with:
+  #         push: true
+  #         tags: ${{ steps.meta.outputs.tags }}
+  #         build-args: ${{ steps.build_args.outputs.args }}
+  #         labels: ${{ steps.meta.outputs.labels }}
+  #         platforms: linux/${{ matrix.arch }}
