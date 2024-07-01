@@ -135,7 +135,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: lean-config
-        path: .config
+        path: openwrt/.config
     
     - name: Check condition and exit
       run: |
