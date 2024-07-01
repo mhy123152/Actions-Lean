@@ -131,6 +131,17 @@ jobs:
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
 
+    - name: upload .config file
+      uses: actions/upload-artifact@v4
+      with:
+        name: lean-config
+        path: .config
+    
+    - name: Check condition and exit
+      run: |
+        echo "config uploaded! exiting..."
+        exit 1
+
     - name: 正在编译固件
       id: compile
       run: |
