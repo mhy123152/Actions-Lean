@@ -1,0 +1,27 @@
+name: Build and push docker containers
+
+on:
+  repository_dispatch:
+  workflow_dispatch:
+    inputs:
+      rootfs_url:
+        description: 'Openwrt rootfs file url'
+        required: true
+
+jobs:
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: 构造docker镜像
+      id: push
+      run: |
+        cd $GITHUB_WORKSPACE/dockerx86
+        wget ${{ github.event.inputs.rootfs_url }} 
+        mv *.tar.gz openwrt-x86-64-default-rootfs.tar.gz  
+        chmod +x $DOCKER_BUILD_SH
+        ./$DOCKER_BUILD_SH
+        gzip -dc docker-img-openwrt-x86-latest.gz | docker load
+        docker login --username=${{ secrets.DOCKER_USER }} --password=${{ secrets.DOCKER_TOKEN }}
+        docker tag mhy123152/lean-rootfs mhy123152/lean-rootfs:${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}
+        docker push mhy123152/lean-rootfs
+        echo "status=success" >> $GITHUB_OUTPUT
