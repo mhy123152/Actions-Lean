@@ -11,7 +11,7 @@
 #
 
 # Modify default IP
-# sed -i 's/192.168.1.1/10.10.10.6/g' package/base-files/files/bin/config_generate
+sed -i 's/192.168.1.1/192.168.255.9/g' package/base-files/files/bin/config_generate
 
 # rm -rf feeds/luci/luci-app-smartdns
 # rm -rf feeds/luci/applications/luci-app-mosdns
@@ -20,8 +20,8 @@
 # rm -rf feeds/packages/lang/golang
 # git clone https://github.com/kenzok8/golang feeds/packages/lang/golang
 
-
-# sed -i 's/list listen_https/# list listen_https/' package/network/services/uhttpd/files/uhttpd.config
+# 禁用https登录
+sed -i 's/list listen_https/# list listen_https/' package/network/services/uhttpd/files/uhttpd.config
 
 
 #'设置默认主题'
