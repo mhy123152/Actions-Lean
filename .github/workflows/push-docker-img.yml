@@ -18,13 +18,13 @@ jobs:
     - name: 构造docker镜像
       id: push
       run: |
-        cd $GITHUB_WORKSPACE/dockerx86
-        wget ${{ github.event.inputs.rootfs_url }} 
-        mv *.tar.gz openwrt-x86-64-default-rootfs.tar.gz  
-        chmod +x build.sh
-        ./build.sh
-        gzip -dc docker-img-openwrt-x86-latest.gz | docker load
-        docker login --username=${{ secrets.DOCKER_USER }} --password=${{ secrets.DOCKER_TOKEN }}
-        docker tag mhy123152/lean-rootfs mhy123152/lean-rootfs:x86-64
-        docker push mhy123152/lean-rootfs
-        echo "status=success" >> $GITHUB_OUTPUT
+        cd $GITHUB_WORKSPACE/dockerx86 && \
+        wget ${{ github.event.inputs.rootfs_url }} && \
+        mv *.tar.gz openwrt-x86-64-default-rootfs.tar.gz && \
+        chmod +x build.sh && \
+        ./build.sh && \
+        gzip -dc docker-img-openwrt-x86-latest.gz | docker load && \
+        docker login --username=${{ secrets.DOCKER_USER }} --password=${{ secrets.DOCKER_TOKEN }} && \
+        docker tag mhy123152/lean-rootfs mhy123152/lean-rootfs:x86-64 && \
+        docker push mhy123152/lean-rootfs && \
+        echo "status=success" >> $GITHUB_OUTPUT && \
